@@ -17,7 +17,9 @@ NODE := $(COMPOSE) run --rm --no-deps node
 help: ## Lista celów
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
-init: env install ## Pierwsze uruchomienie: .env z szablonu + zależności npm
+init: env ## Pierwsze uruchomienie: .env z szablonu + zależności npm
+	@# Nowy proces make: ten wczytał -include .env, zanim plik powstał, i nie widzi go jako gotowego
+	@$(MAKE) --no-print-directory install
 	@echo ""
 	@echo "✅ Gotowe. Dalej: make up (gra na http://localhost:$(APP_PORT))  |  make dev  |  make check"
 
