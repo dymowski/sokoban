@@ -37,7 +37,14 @@ const at = (hash: string) => window.history.replaceState(null, '', `/${hash}`);
 
 const setup = (levels: readonly LevelDef[] = [ONE]) => render(App, { props: { levels } });
 
-const press = (key: string) => fireEvent.keyDown(window, { key });
+/** A full key press: down and back up. Returns false when keydown was cancelled. */
+const press = async (key: string) => {
+  const notCancelled = await fireEvent.keyDown(window, { key });
+  await fireEvent.keyUp(window, { key });
+  return notCancelled;
+};
+const keyDown = (key: string, repeat = false) => fireEvent.keyDown(window, { key, repeat });
+const keyUp = (key: string) => fireEvent.keyUp(window, { key });
 const board = () => screen.getByTestId('board');
 const player = () => screen.getByTestId('player');
 const stat = (id: string) => screen.getByTestId(id).textContent?.trim();
@@ -82,6 +89,43 @@ describe('App', () => {
     await press('r');
     expect(player()).toHaveAttribute('data-pos', '1,2');
     expect(stat('moves')).toBe('0');
+  });
+
+  it('holding an arrow key moves the player one square, and repeats do not scroll the page', async () => {
+    setup();
+    await press('ArrowUp');
+    await keyDown('ArrowRight');
+    for (let i = 0; i < 3; i++) expect(await keyDown('ArrowRight', true)).toBe(false);
+    expect(player()).toHaveAttribute('data-pos', '2,1');
+    expect(stat('moves')).toBe('2');
+  });
+
+  it('the same arrow moves again only after it is released', async () => {
+    setup();
+    await press('ArrowUp');
+    await keyDown('ArrowRight');
+    await keyDown('ArrowRight');
+    expect(player()).toHaveAttribute('data-pos', '2,1');
+    await keyUp('ArrowRight');
+    await keyDown('ArrowRight');
+    expect(player()).toHaveAttribute('data-pos', '3,1');
+  });
+
+  it('another arrow moves while the previous one is still held', async () => {
+    setup();
+    await keyDown('ArrowUp');
+    await keyDown('ArrowRight');
+    expect(player()).toHaveAttribute('data-pos', '2,1');
+    expect(stat('moves')).toBe('2');
+  });
+
+  it('leaving the window releases held arrows', async () => {
+    setup();
+    await press('ArrowUp');
+    await keyDown('ArrowRight');
+    await fireEvent.blur(window);
+    await keyDown('ArrowRight');
+    expect(player()).toHaveAttribute('data-pos', '3,1');
   });
 
   it('buttons work the same as the shortcuts', async () => {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SvelteSet } from 'svelte/reactivity';
   import { LEVELS } from './levels/levels';
   import { parseLevel, LevelError, type LevelDef } from './domain/level';
   import {
@@ -72,7 +73,21 @@
     else writeHash(hashOf(index));
   }
 
+  // Keys that are down and not released yet: one arrow press moves the player one square.
+  const down = new SvelteSet<string>();
+
+  function onKeyup(event: KeyboardEvent) {
+    down.delete(event.key);
+  }
+
+  // A key released outside the window never sends keyup.
+  function onBlur() {
+    down.clear();
+  }
+
   function onKeydown(event: KeyboardEvent) {
+    const held = event.repeat || down.has(event.key);
+    down.add(event.key);
     // The open level list handles its own keys.
     if (pickerOpen) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;
@@ -96,7 +111,7 @@
     const game = current.loaded.game;
     switch (action.type) {
       case 'move':
-        if (!solved) setGame(move(game, action.dir));
+        if (!solved && !held) setGame(move(game, action.dir));
         break;
       case 'undo':
         setGame(undo(game));
@@ -111,7 +126,12 @@
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} onhashchange={onHashChange} />
+<svelte:window
+  onkeydown={onKeydown}
+  onkeyup={onKeyup}
+  onblur={onBlur}
+  onhashchange={onHashChange}
+/>
 
 <main>
   <header>

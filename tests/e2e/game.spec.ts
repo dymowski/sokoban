@@ -52,6 +52,20 @@ test('arrow keys move the player and do not scroll the page', async ({ page }) =
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
 });
 
+test('holding an arrow key moves the player one square per press', async ({ page }) => {
+  await page.goto('/');
+  const player = page.getByTestId('player');
+  const moves = page.getByTestId('moves');
+  // Level 1 has free squares to the right of the player; a key already down repeats (repeat: true).
+  for (let i = 0; i < 3; i++) await page.keyboard.down('ArrowRight');
+  await page.keyboard.up('ArrowRight');
+  await expect(moves).toHaveText('1');
+  await expect(player).toHaveAttribute('data-pos', '2,1');
+  await page.keyboard.press('ArrowRight');
+  await expect(moves).toHaveText('2');
+  await expect(player).toHaveAttribute('data-pos', '3,1');
+});
+
 test('the game works in a subdirectory, as on GitHub Pages (/sokoban/)', async ({ page }) => {
   // On Pages the domain root has no game assets — every request outside /sokoban/ must fail.
   await page.route('**/*', (route) =>
