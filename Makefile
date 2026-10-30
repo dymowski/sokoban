@@ -14,79 +14,79 @@ NODE := $(COMPOSE) run --rm --no-deps node
 .PHONY: help init env install lock build up down restart logs dev shell \
 	lint format format-check typecheck test test-unit test-integration test-e2e check
 
-help: ## Lista celów
+help: ## List targets
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
-init: env ## Pierwsze uruchomienie: .env z szablonu + zależności npm
-	@# Nowy proces make: ten wczytał -include .env, zanim plik powstał, i nie widzi go jako gotowego
+init: env ## First run: .env from the template + npm dependencies
+	@# New make process: this one read -include .env before the file existed and does not see it as ready
 	@$(MAKE) --no-print-directory install
 	@echo ""
-	@echo "✅ Gotowe. Dalej: make up (gra na http://localhost:$(APP_PORT))  |  make dev  |  make check"
+	@echo "✅ Done. Next: make up (game at http://localhost:$(APP_PORT))  |  make dev  |  make check"
 
 env:
-	@if [ -f .env ]; then echo ".env już istnieje — nie nadpisuję"; else cp .env.example .env && echo "Utworzono .env z .env.example"; fi
+	@if [ -f .env ]; then echo ".env already exists — not overwriting it"; else cp .env.example .env && echo "Created .env from .env.example"; fi
 
 .env:
-	@echo "Brak pliku .env — uruchom: make init (skopiuje .env.example do .env)"; exit 1
+	@echo "No .env file — run: make init (copies .env.example to .env)"; exit 1
 
 node_modules/.package-lock.json: package.json package-lock.json | .env
 	$(NODE) npm ci
 
-install: node_modules/.package-lock.json ## Zależności npm (npm ci w kontenerze, tylko gdy lock się zmienił)
+install: node_modules/.package-lock.json ## npm dependencies (npm ci in a container, only when the lock file changed)
 
-lock: | .env ## Odśwież package-lock.json w kontenerze (bez npm na hoście)
+lock: | .env ## Refresh package-lock.json in a container (no npm on the host)
 	$(NODE) npm install --package-lock-only
 
-build: install ## Zbuduj grę do dist/ (vite build)
+build: install ## Build the game into dist/ (vite build)
 	$(NODE) npx vite build
 
-up: build ## Zbuduj i uruchom grę za nginx
+up: build ## Build and run the game behind nginx
 	$(COMPOSE) up -d --wait nginx
 	@echo ""
-	@echo "✅ Gra działa: http://localhost:$(APP_PORT)"
-	@echo "   Sterowanie: strzałki, Z = cofnij, R = od nowa, N = inna plansza"
-	@echo "   Dalej: make logs  |  make down  |  make dev (HMR na http://localhost:$(DEV_PORT))"
+	@echo "✅ Game is running: http://localhost:$(APP_PORT)"
+	@echo "   Controls: arrows, Z = undo, R = restart, N = another level"
+	@echo "   Next: make logs  |  make down  |  make dev (HMR at http://localhost:$(DEV_PORT))"
 
-down: ## Zatrzymaj wszystkie kontenery
+down: ## Stop all containers
 	$(COMPOSE) --profile dev --profile test down --remove-orphans
 
-restart: down up ## Restart (przebudowa + start)
+restart: down up ## Restart (rebuild + start)
 
-logs: ## Logi nginx (Ctrl+C kończy)
+logs: ## nginx logs (Ctrl+C to stop)
 	$(COMPOSE) logs -f nginx
 
-dev: install ## Serwer deweloperski Vite z HMR
-	@echo "▶ Dev server: http://localhost:$(DEV_PORT)  (Ctrl+C kończy)"
+dev: install ## Vite dev server with HMR
+	@echo "▶ Dev server: http://localhost:$(DEV_PORT)  (Ctrl+C to stop)"
 	$(COMPOSE) --profile dev up dev
 
-shell: | .env ## Powłoka w kontenerze node
+shell: | .env ## Shell in the node container
 	$(NODE) bash
 
 lint: install ## ESLint
 	$(NODE) npx eslint .
 
-format: install ## Prettier — formatuj pliki
+format: install ## Prettier — format files
 	$(NODE) npx prettier --write .
 
-format-check: install ## Prettier — sprawdź formatowanie
+format-check: install ## Prettier — check formatting
 	$(NODE) npx prettier --check .
 
-typecheck: install ## svelte-check (TypeScript strict, także .svelte)
+typecheck: install ## svelte-check (strict TypeScript, .svelte files included)
 	$(NODE) npx svelte-check --tsconfig ./tsconfig.json --fail-on-warnings
 
-test: test-unit test-integration test-e2e ## Wszystkie testy (w dockerach)
+test: test-unit test-integration test-e2e ## All tests (in Docker containers)
 
-test-unit: install ## Tylko testy jednostkowe (domena, pula plansz, wartownicy)
+test-unit: install ## Unit tests only (domain, level pool, repo guards)
 	$(NODE) npx vitest run --project unit
 
-test-integration: install ## Tylko testy integracyjne (komponenty Svelte w jsdom)
+test-integration: install ## Integration tests only (Svelte components in jsdom)
 	$(NODE) npx vitest run --project integration
 
-test-e2e: build ## Tylko testy e2e (Playwright przeciw nginx)
+test-e2e: build ## E2E tests only (Playwright against nginx)
 	$(COMPOSE) up -d --wait nginx
 	$(COMPOSE) --profile test run --rm e2e
 
-check: ## Pełna bramka: lint, format, typy, testy
+check: ## Full gate: lint, format, types, tests
 	@failed=""; \
 	$(MAKE) --no-print-directory lint         || failed="$$failed lint"; \
 	$(MAKE) --no-print-directory format-check || failed="$$failed format-check"; \

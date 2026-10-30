@@ -1,7 +1,7 @@
 export interface LevelDef {
   readonly id: string;
   readonly name: string;
-  /** Mapa w formacie XSB: # ściana, @ ludzik, + ludzik na celu, $ skrzynia, * skrzynia na celu, . cel. */
+  /** Map in XSB format: # wall, @ player, + player on goal, $ box, * box on goal, . goal. */
   readonly map: string;
 }
 
@@ -11,7 +11,7 @@ export interface Level {
   readonly width: number;
   readonly height: number;
   readonly walls: ReadonlySet<number>;
-  /** Pola wewnątrz planszy, po których może chodzić ludzik (bez ścian i zewnętrza). */
+  /** Squares inside the level the player can walk on (no walls, no outside). */
   readonly floor: ReadonlySet<number>;
   readonly goals: ReadonlySet<number>;
   readonly boxes: ReadonlySet<number>;
@@ -27,7 +27,7 @@ export const cellIndex = (level: Pick<Level, 'width'>, x: number, y: number): nu
 
 export function parseLevel(def: LevelDef): Level {
   const fail = (msg: string): never => {
-    throw new LevelError(`Plansza »${def.id}«: ${msg}`);
+    throw new LevelError(`Level "${def.id}": ${msg}`);
   };
 
   const rows = def.map.replace(/^\n+|\s+$/g, '').split('\n');
@@ -47,8 +47,7 @@ export function parseLevel(def: LevelDef): Level {
           break;
         case '@':
         case '+':
-          if (player !== null)
-            fail(`drugi ludzik w wierszu ${y + 1} — dokładnie jeden znak @ lub +`);
+          if (player !== null) fail(`second player in row ${y + 1} — use exactly one @ or +`);
           player = i;
           if (ch === '+') goals.add(i);
           break;
@@ -68,16 +67,16 @@ export function parseLevel(def: LevelDef): Level {
           break;
         default:
           fail(
-            `nieznany znak »${ch}« w wierszu ${y + 1}, kolumnie ${x + 1} — dozwolone: # @ + $ * . i spacja`,
+            `unknown character "${ch}" in row ${y + 1}, column ${x + 1} — allowed: # @ + $ * . and space`,
           );
       }
     }
   }
 
-  const start = player ?? fail('brak ludzika — mapa musi zawierać dokładnie jeden znak @ lub +');
-  if (boxes.size === 0) fail('brak skrzyń — dodaj co najmniej jedną skrzynię ($) i cel (.)');
+  const start = player ?? fail('no player — the map must contain exactly one @ or +');
+  if (boxes.size === 0) fail('no boxes — add at least one box ($) and one goal (.)');
   if (boxes.size !== goals.size) {
-    fail(`${boxes.size} skrzyń i ${goals.size} celów — liczby muszą być równe`);
+    fail(`boxes: ${boxes.size}, goals: ${goals.size} — the counts must be equal`);
   }
 
   const floor = new Set<number>([start]);
@@ -88,7 +87,7 @@ export function parseLevel(def: LevelDef): Level {
     const y = Math.floor(i / width);
     if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
       fail(
-        `nie jest zamknięta ścianami — ludzik może wyjść poza mapę przez pole w wierszu ${y + 1}, kolumnie ${x + 1}`,
+        `not enclosed by walls — the player can walk off the map through the square in row ${y + 1}, column ${x + 1}`,
       );
     }
     for (const n of [i - 1, i + 1, i - width, i + width]) {
@@ -102,7 +101,7 @@ export function parseLevel(def: LevelDef): Level {
   for (const i of [...boxes, ...goals]) {
     if (!floor.has(i)) {
       fail(
-        `skrzynia lub cel w wierszu ${Math.floor(i / width) + 1}, kolumnie ${(i % width) + 1} leży poza obszarem dostępnym dla ludzika`,
+        `box or goal in row ${Math.floor(i / width) + 1}, column ${(i % width) + 1} lies outside the area the player can reach`,
       );
     }
   }

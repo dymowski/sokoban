@@ -4,7 +4,7 @@ import { LevelError, cellIndex, parseLevel } from '../../src/domain/level';
 const def = (map: string) => ({ id: 't', name: 'Test', map });
 
 describe('parseLevel', () => {
-  it('czyta ściany, cele, skrzynie i ludzika z formatu XSB', () => {
+  it('reads walls, goals, boxes and the player from XSB', () => {
     const level = parseLevel(
       def(`
 #####
@@ -21,7 +21,7 @@ describe('parseLevel', () => {
     expect(level.floor.has(cellIndex(level, 3, 1))).toBe(true);
   });
 
-  it('rozumie ludzika na celu (+) i skrzynię na celu (*)', () => {
+  it('understands player on goal (+) and box on goal (*)', () => {
     const level = parseLevel(
       def(`
 ######
@@ -35,7 +35,7 @@ describe('parseLevel', () => {
     expect(level.boxes.has(cellIndex(level, 2, 1))).toBe(true);
   });
 
-  it('wyrównuje krótsze wiersze i nie liczy zewnętrza jako podłogi', () => {
+  it('pads shorter rows and does not count the outside as floor', () => {
     const level = parseLevel(
       def(`
   ####
@@ -49,38 +49,38 @@ describe('parseLevel', () => {
     expect(level.floor.has(cellIndex(level, 4, 1))).toBe(true);
   });
 
-  it('odrzuca planszę bez ludzika z komunikatem, co poprawić', () => {
+  it('rejects a level without a player, saying what to fix', () => {
     expect(() => parseLevel(def('#####\n# $.#\n#####'))).toThrow(LevelError);
     expect(() => parseLevel(def('#####\n# $.#\n#####'))).toThrow(
-      /Plansza »t«: brak ludzika.*dokładnie jeden znak @ lub \+/,
+      /Level "t": no player.*exactly one @ or \+/,
     );
   });
 
-  it('odrzuca planszę z dwoma ludzikami, wskazując wiersz', () => {
-    expect(() => parseLevel(def('######\n#@$.@#\n######'))).toThrow(/drugi ludzik w wierszu 2/);
+  it('rejects a level with two players, pointing at the row', () => {
+    expect(() => parseLevel(def('######\n#@$.@#\n######'))).toThrow(/second player in row 2/);
   });
 
-  it('odrzuca różną liczbę skrzyń i celów', () => {
+  it('rejects different numbers of boxes and goals', () => {
     expect(() => parseLevel(def('######\n#@$$.#\n######'))).toThrow(
-      /2 skrzyń.*1 celów.*muszą być równe/,
+      /boxes: 2, goals: 1.*must be equal/,
     );
   });
 
-  it('odrzuca nieznany znak, wskazując go i jego pozycję', () => {
+  it('rejects an unknown character, pointing at it and its position', () => {
     expect(() => parseLevel(def('#####\n#@$x#\n#####'))).toThrow(
-      /nieznany znak »x« w wierszu 2, kolumnie 4/,
+      /unknown character "x" in row 2, column 4/,
     );
   });
 
-  it('odrzuca planszę bez skrzyń', () => {
-    expect(() => parseLevel(def('####\n#@ #\n####'))).toThrow(/brak skrzyń/);
+  it('rejects a level without boxes', () => {
+    expect(() => parseLevel(def('####\n#@ #\n####'))).toThrow(/no boxes/);
   });
 
-  it('odrzuca planszę niezamkniętą ścianami', () => {
-    expect(() => parseLevel(def('#####\n#@$. \n#####'))).toThrow(/nie jest zamknięta ścianami/);
+  it('rejects a level not enclosed by walls', () => {
+    expect(() => parseLevel(def('#####\n#@$. \n#####'))).toThrow(/not enclosed by walls/);
   });
 
-  it('odrzuca skrzynię lub cel poza obszarem dostępnym dla ludzika', () => {
+  it('rejects a box or goal outside the area the player can reach', () => {
     expect(() =>
       parseLevel(
         def(`
@@ -89,6 +89,6 @@ describe('parseLevel', () => {
 #########
 `),
       ),
-    ).toThrow(/poza obszarem dostępnym dla ludzika/);
+    ).toThrow(/outside the area the player can reach/);
   });
 });

@@ -14,7 +14,7 @@ interface Snapshot {
 
 export interface GameState extends Snapshot {
   readonly level: Level;
-  /** Poprzednie stany do cofania — tylko w pamięci, gra niczego nie zapisuje. */
+  /** Previous states for undo — in memory only, the game saves nothing. */
   readonly history: readonly Snapshot[];
 }
 
@@ -46,7 +46,7 @@ export function newGame(level: Level): GameState {
 const isFree = (state: GameState, cell: number): boolean =>
   state.level.floor.has(cell) && !state.boxes.has(cell);
 
-/** Krok w danym kierunku; pcha skrzynię, jeśli za nią jest wolne pole. Zablokowany ruch zwraca ten sam stan. */
+/** One step in the given direction; pushes a box if the square behind it is free. A blocked move returns the same state. */
 export function move(state: GameState, dir: Direction): GameState {
   const d = offset(state.level, dir);
   const target = state.player + d;

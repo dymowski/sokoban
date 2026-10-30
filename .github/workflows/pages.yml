@@ -1,4 +1,4 @@
-# Push na master = publikacja gry na GitHub Pages, ale tylko po zielonym make check.
+# Push to master = publish the game on GitHub Pages, but only after a green make check.
 name: pages
 
 on:
@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 
-# Dwa deploye naraz się nie przeplatają; trwający nie jest przerywany.
+# Two deploys never interleave; one in progress is not cancelled.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -20,13 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Konfiguracja i zależności (.env z .env.example, npm ci w kontenerze)
+      - name: Configuration and dependencies (.env from .env.example, npm ci in a container)
         run: make init
 
-      - name: Bramka (lint, format, typy, testy unit/integration/e2e)
+      - name: Gate (lint, format, types, unit/integration/e2e tests)
         run: make check
 
-      - name: Build do dist/
+      - name: Build into dist/
         run: make build
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

@@ -4,7 +4,7 @@ import './app.css';
 
 const target = document.getElementById('app');
 if (!target) {
-  throw new Error('Brak elementu #app w index.html — gra nie ma się gdzie wyrenderować.');
+  throw new Error('No #app element in index.html — the game has nowhere to render.');
 }
 
 export default mount(App, { target });

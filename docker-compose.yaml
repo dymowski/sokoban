@@ -1,7 +1,7 @@
 name: sokoban
 
 x-node: &node
-  image: ${NODE_IMAGE:?NODE_IMAGE brak w .env — uruchom make init (kopiuje .env.example do .env)}
+  image: ${NODE_IMAGE:?NODE_IMAGE missing in .env — run make init (copies .env.example to .env)}
   user: '${UID:-1000}:${GID:-1000}'
   working_dir: /app
   environment:
@@ -12,36 +12,36 @@ x-node: &node
     - ./:/app
 
 services:
-  # Narzędzia: npm, vite build, vitest, eslint, svelte-check (make install/build/test/lint…)
+  # Tooling: npm, vite build, vitest, eslint, svelte-check (make install/build/test/lint…)
   node:
     <<: *node
     profiles: [cli]
 
-  # Serwer deweloperski Vite z HMR (make dev)
+  # Vite dev server with HMR (make dev)
   dev:
     <<: *node
     profiles: [dev]
     command: npx vite --host 0.0.0.0 --port 5173 --strictPort
     ports:
-      - '${DEV_PORT:?DEV_PORT brak w .env — uruchom make init}:5173'
+      - '${DEV_PORT:?DEV_PORT missing in .env — run make init}:5173'
 
-  # Jedyny endpoint HTTP: serwuje zbudowaną grę z dist/ (make up)
+  # The only HTTP endpoint: serves the built game from dist/ (make up)
   nginx:
-    image: ${NGINX_IMAGE:?NGINX_IMAGE brak w .env — uruchom make init}
+    image: ${NGINX_IMAGE:?NGINX_IMAGE missing in .env — run make init}
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./dist:/usr/share/nginx/html:ro
     ports:
-      - '${APP_PORT:?APP_PORT brak w .env — uruchom make init}:8080'
+      - '${APP_PORT:?APP_PORT missing in .env — run make init}:8080'
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/health']
       interval: 5s
       timeout: 3s
       retries: 10
 
-  # Testy e2e (Playwright) przeciw nginx w sieci compose (make test-e2e)
+  # E2E tests (Playwright) against nginx on the compose network (make test-e2e)
   e2e:
-    image: ${PLAYWRIGHT_IMAGE:?PLAYWRIGHT_IMAGE brak w .env — uruchom make init}
+    image: ${PLAYWRIGHT_IMAGE:?PLAYWRIGHT_IMAGE missing in .env — run make init}
     profiles: [test]
     user: '${UID:-1000}:${GID:-1000}'
     working_dir: /app

@@ -1,61 +1,61 @@
 # Sokoban
 
-Jednostronicowa gra w przeglądarce: wepchnij wszystkie skrzynie na zaznaczone pola.
-Przy każdym wejściu (i każdym F5) losowana jest inna plansza z puli. Postęp nie jest zapisywany.
+A single-page browser game: push every box onto a marked square.
+Every visit (and every F5) picks a different level from the pool. Progress is not saved.
 
-Zagraj: **https://dymowski.github.io/sokoban/**
+Play: **https://dymowski.github.io/sokoban/**
 
-## Sterowanie
+## Controls
 
-| Klawisz      | Akcja                          |
-| ------------ | ------------------------------ |
-| ↑ ↓ ← →      | ruch / pchnięcie skrzyni       |
-| Z, Backspace | cofnij ruch                    |
-| R            | zacznij planszę od nowa        |
-| N            | inna plansza                   |
-| Enter        | następna plansza (po wygranej) |
+| Key          | Action                     |
+| ------------ | -------------------------- |
+| ↑ ↓ ← →      | move / push a box          |
+| Z, Backspace | undo a move                |
+| R            | restart the level          |
+| N            | another level              |
+| Enter        | next level (after winning) |
 
-## Uruchomienie
+## Running
 
-Wymagany tylko Docker z `docker compose` — Node, npm i przeglądarki działają w kontenerach.
+Only Docker with `docker compose` is required — Node, npm and the browsers run in containers.
 
 ```bash
-make init   # .env z .env.example + zależności npm
-make up     # build + nginx → http://localhost:8088 (port: APP_PORT w .env)
-make dev    # serwer Vite z HMR → http://localhost:5188 (DEV_PORT)
+make init   # .env from .env.example + npm dependencies
+make up     # build + nginx → http://localhost:8088 (port: APP_PORT in .env)
+make dev    # Vite server with HMR → http://localhost:5188 (DEV_PORT)
 make down
 ```
 
-`make help` wypisuje wszystkie cele.
+`make help` lists all targets.
 
-## Testy i jakość
+## Tests and quality
 
 ```bash
-make check              # lint + format-check + typecheck + wszystkie testy
-make test-unit          # domena, pula plansz (solver), wartownicy repo
-make test-integration   # komponenty Svelte w jsdom
-make test-e2e           # Playwright przeciw zbudowanej grze za nginx (także w podkatalogu /sokoban/)
+make check              # lint + format-check + typecheck + all tests
+make test-unit          # domain, level pool (solver), repo guards
+make test-integration   # Svelte components in jsdom
+make test-e2e           # Playwright against the built game behind nginx (also in the /sokoban/ subdirectory)
 ```
 
-## Publikacja (GitHub Pages)
+## Publishing (GitHub Pages)
 
-Gra to statyczne pliki z `dist/` (`index.html` + jeden JS + jeden CSS) — na produkcji nie potrzebuje
-serwera aplikacji, wystarczy dowolny hosting plików.
+The game is static files in `dist/` (`index.html` + one JS + one CSS) — production needs no
+application server, any file hosting will do.
 
-- Push na `master` uruchamia workflow `.github/workflows/pages.yml`: `make check` → `make build` →
-  publikacja `dist/` na https://dymowski.github.io/sokoban/. Czerwona bramka = brak publikacji.
-- `base: './'` w `vite.config.ts` daje względne ścieżki assetów, dzięki czemu gra działa w podkatalogu
-  `/sokoban/`; pilnuje tego test e2e uruchamiany przeciw `http://nginx:8080/sokoban/`.
-- Jednorazowo w repo: Settings → Pages → Source: **GitHub Actions**.
+- A push to `master` runs the `.github/workflows/pages.yml` workflow: `make check` → `make build` →
+  publish `dist/` at https://dymowski.github.io/sokoban/. A red gate means no publishing.
+- `base: './'` in `vite.config.ts` gives relative asset paths, so the game works in the `/sokoban/`
+  subdirectory; an e2e test run against `http://nginx:8080/sokoban/` guards this.
+- One-time repo setting: Settings → Pages → Source: **GitHub Actions**.
 
-## Struktura
+## Structure
 
-- `src/domain/` — czysta logika gry bez Svelte/DOM: parser plansz XSB, ruchy i cofanie, mapowanie klawiszy, losowanie, solver (BFS po pchnięciach, używany w testach).
-- `src/levels/levels.ts` — pula plansz w formacie XSB (`#` ściana, `@` ludzik, `$` skrzynia, `.` cel, `*` skrzynia na celu, `+` ludzik na celu).
-- `src/ui/` — komponenty Svelte, `src/i18n/` — słownik tekstów.
-- `docker/nginx/` — konfiguracja serwera, `docker-compose.yaml` — usługi `node` (narzędzia), `dev`, `nginx`, `e2e`.
+- `src/domain/` — pure game logic without Svelte/DOM: XSB level parser, moves and undo, key mapping, random level picking, solver (BFS over pushes, used in tests).
+- `src/levels/levels.ts` — level pool in XSB format (`#` wall, `@` player, `$` box, `.` goal, `*` box on goal, `+` player on goal).
+- `src/ui/` — Svelte components, `src/i18n/` — text dictionary.
+- `docker/nginx/` — server configuration, `docker-compose.yaml` — services `node` (tooling), `dev`, `nginx`, `e2e`.
 
-## Dodawanie planszy
+## Adding a level
 
-Dopisz obiekt do `LEVELS` w `src/levels/levels.ts` i uruchom `make test-unit` — test sprawdzi,
-że plansza się parsuje, nie jest rozwiązana na starcie i solver znajduje rozwiązanie (≥ 4 pchnięcia).
+Add an object to `LEVELS` in `src/levels/levels.ts` and run `make test-unit` — the test checks
+that the level parses, is not solved at the start and that the solver finds a solution (≥ 4 pushes).

@@ -1,13 +1,13 @@
 import type { LevelDef } from '../domain/level';
 
 /**
- * Pula plansz (format XSB). Każda musi przejść test solvera w tests/unit/levels.test.ts
- * (rozwiązywalna, ≥ 4 pchnięcia) — inaczej make test-unit pada.
+ * Level pool (XSB format). Each level must pass the solver test in tests/unit/levels.test.ts
+ * (solvable, ≥ 4 pushes) — otherwise make test-unit fails.
  */
 export const LEVELS: readonly LevelDef[] = [
   {
-    id: 'rozgrzewka',
-    name: 'Rozgrzewka',
+    id: 'warm-up',
+    name: 'Warm-up',
     map: `
 #######
 #  .  #
@@ -17,8 +17,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'korytarz',
-    name: 'Korytarz',
+    id: 'corridor',
+    name: 'Corridor',
     map: `
 ########
 #      #
@@ -29,8 +29,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'dwa-pokoje',
-    name: 'Dwa pokoje',
+    id: 'two-rooms',
+    name: 'Two rooms',
     map: `
 #########
 #       #
@@ -42,8 +42,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'magazyn',
-    name: 'Magazyn',
+    id: 'warehouse',
+    name: 'Warehouse',
     map: `
  ######
  #    ###
@@ -55,8 +55,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'spirala',
-    name: 'Spirala',
+    id: 'spiral',
+    name: 'Spiral',
     map: `
   ######
   #    #
@@ -68,8 +68,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'zakret',
-    name: 'Zakręt',
+    id: 'bend',
+    name: 'Bend',
     map: `
   #####
 ###   #
@@ -82,8 +82,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'waskie-przejscie',
-    name: 'Wąskie przejście',
+    id: 'narrow-passage',
+    name: 'Narrow passage',
     map: `
 ########
 #..    #
@@ -95,8 +95,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'klasa',
-    name: 'Klasa',
+    id: 'classroom',
+    name: 'Classroom',
     map: `
 #########
 #.  #  .#
@@ -108,8 +108,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'schody',
-    name: 'Schody',
+    id: 'stairs',
+    name: 'Stairs',
     map: `
 ######
 #@   #
@@ -121,8 +121,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'kolumny',
-    name: 'Kolumny',
+    id: 'columns',
+    name: 'Columns',
     map: `
 #########
 #   .   #
@@ -134,8 +134,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'labirynt',
-    name: 'Labirynt',
+    id: 'maze',
+    name: 'Maze',
     map: `
 ##########
 #   #    #
@@ -148,8 +148,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'biuro',
-    name: 'Biuro',
+    id: 'office',
+    name: 'Office',
     map: `
 ########
 #  #   #
@@ -161,8 +161,8 @@ export const LEVELS: readonly LevelDef[] = [
 `,
   },
   {
-    id: 'dlugi-korytarz',
-    name: 'Długi korytarz',
+    id: 'long-corridor',
+    name: 'Long corridor',
     map: `
 ###########
 #         #

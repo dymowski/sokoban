@@ -44,7 +44,7 @@
     }
   }
 
-  // Celowo tylko wartość początkowa: plansza losowana raz przy starcie strony.
+  // Initial value only, on purpose: the level is picked once when the page loads.
   // svelte-ignore state_referenced_locally
   let current = $state.raw<Loaded>(load(readLastLevelId(storage)));
 
@@ -62,7 +62,7 @@
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const action = keyToAction(event.key);
     if (!action) return;
-    // Enter na przycisku z fokusem obsługuje sam przycisk.
+    // Enter on a focused button is handled by the button itself.
     if (action.type === 'confirm' && event.target instanceof HTMLButtonElement) return;
     event.preventDefault();
     if (!current.ok) {

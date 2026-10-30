@@ -6,7 +6,7 @@ import { solve } from '../../src/domain/solver';
 const lvl = (map: string) => parseLevel({ id: 's', name: 'Solver', map });
 
 describe('solve', () => {
-  it('znajduje rozwiązanie z minimalną liczbą pchnięć, które działa w grze', () => {
+  it('finds a solution with the minimum number of pushes that works in the game', () => {
     const level = lvl(`
 #######
 #     #
@@ -22,7 +22,7 @@ describe('solve', () => {
     expect(isSolved(g)).toBe(true);
   });
 
-  it('zwraca null dla planszy nierozwiązywalnej (skrzynia w rogu)', () => {
+  it('returns null for an unsolvable level (box in a corner)', () => {
     expect(
       solve(
         lvl(`

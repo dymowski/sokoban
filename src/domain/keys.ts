@@ -14,7 +14,7 @@ const ARROWS: Readonly<Record<string, Direction>> = {
   ArrowRight: 'right',
 };
 
-/** Mapuje KeyboardEvent.key na akcję gry; inne klawisze → null (przeglądarka obsługuje je normalnie). */
+/** Maps KeyboardEvent.key to a game action; other keys → null (the browser handles them as usual). */
 export function keyToAction(key: string): Action | null {
   const dir = ARROWS[key];
   if (dir) return { type: 'move', dir };

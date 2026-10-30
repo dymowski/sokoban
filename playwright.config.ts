@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 const baseURL = process.env.BASE_URL;
 if (!baseURL) {
   throw new Error(
-    'Brak zmiennej BASE_URL — testy e2e uruchamiaj przez "make test-e2e" (ustawia BASE_URL=http://nginx:8080).',
+    'BASE_URL is not set — run e2e tests with "make test-e2e" (it sets BASE_URL=http://nginx:8080).',
   );
 }
 

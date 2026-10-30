@@ -2,21 +2,21 @@ import { DIRECTIONS, offset, type Direction } from './game';
 import type { Level } from './level';
 
 export interface Solution {
-  /** Minimalna liczba pchnięć (BFS po pchnięciach). */
+  /** Minimum number of pushes (BFS over pushes). */
   readonly pushes: number;
-  /** Pełna sekwencja ruchów do odtworzenia w grze. */
+  /** Full move sequence to replay in the game. */
   readonly moves: readonly Direction[];
 }
 
 interface Node {
   readonly boxes: readonly number[];
-  /** Rzeczywista pozycja ludzika (tam, gdzie stała pchnięta skrzynia). */
+  /** Actual player position (where the pushed box stood). */
   readonly player: number;
   readonly parent: number;
   readonly dir: Direction | null;
 }
 
-/** Pola, z których skrzynię da się jeszcze dopchnąć do jakiegoś celu (odwrotne „ciągnięcie” od celów). */
+/** Squares from which a box can still be pushed to some goal (reverse "pulling" from the goals). */
 function liveCells(level: Level): Set<number> {
   const live = new Set(level.goals);
   const queue = [...level.goals];
@@ -69,14 +69,14 @@ function walk(level: Level, boxes: ReadonlySet<number>, from: number, to: number
   for (let c = to; c !== from;) {
     const step = prev.get(c);
     if (!step)
-      throw new Error(`Solver: brak ścieżki ludzika z ${from} do ${to} — błąd w rekonstrukcji`);
+      throw new Error(`Solver: no player path from ${from} to ${to} — bug in the reconstruction`);
     path.push(step[1]);
     c = step[0];
   }
   return path.reverse();
 }
 
-/** Rozwiązuje planszę BFS-em po pchnięciach; używany w testach do sprawdzenia puli. */
+/** Solves a level with BFS over pushes; used in tests to check the pool. */
 export function solve(level: Level, maxStates = 1_000_000): Solution | null {
   const live = liveCells(level);
   if ([...level.boxes].some((b) => !live.has(b) && !level.goals.has(b))) return null;

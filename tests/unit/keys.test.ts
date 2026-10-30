@@ -7,7 +7,7 @@ describe('keyToAction', () => {
     ['ArrowDown', 'down'],
     ['ArrowLeft', 'left'],
     ['ArrowRight', 'right'],
-  ] as const)('%s → ruch %s', (key, dir) => {
+  ] as const)('%s → move %s', (key, dir) => {
     expect(keyToAction(key)).toEqual({ type: 'move', dir });
   });
 
@@ -24,7 +24,7 @@ describe('keyToAction', () => {
     expect(keyToAction(key)).toEqual({ type });
   });
 
-  it('inne klawisze są ignorowane', () => {
+  it('other keys are ignored', () => {
     expect(keyToAction('a')).toBeNull();
     expect(keyToAction(' ')).toBeNull();
     expect(keyToAction('Tab')).toBeNull();

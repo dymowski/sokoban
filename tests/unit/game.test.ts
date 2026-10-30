@@ -4,7 +4,7 @@ import { boxesOnGoals, isSolved, move, newGame, reset, undo } from '../../src/do
 
 const level = parseLevel({
   id: 'g',
-  name: 'Gra',
+  name: 'Game',
   map: `
 #######
 #     #
@@ -16,7 +16,7 @@ const level = parseLevel({
 const at = (x: number, y: number) => cellIndex(level, x, y);
 
 describe('game', () => {
-  it('nowa gra startuje z pozycji planszy, bez ruchów', () => {
+  it('a new game starts from the level position with no moves', () => {
     const g = newGame(level);
     expect(g.player).toBe(at(1, 2));
     expect(g.moves).toBe(0);
@@ -24,7 +24,7 @@ describe('game', () => {
     expect(isSolved(g)).toBe(false);
   });
 
-  it('krok na wolną podłogę zwiększa licznik ruchów i ustawia kierunek', () => {
+  it('a step onto free floor increments moves and sets the facing direction', () => {
     const g = move(newGame(level), 'up');
     expect(g.player).toBe(at(1, 1));
     expect(g.moves).toBe(1);
@@ -32,13 +32,13 @@ describe('game', () => {
     expect(g.facing).toBe('up');
   });
 
-  it('ruch w ścianę nic nie zmienia', () => {
+  it('a move into a wall changes nothing', () => {
     const start = newGame(level);
     const g = move(start, 'left');
     expect(g).toBe(start);
   });
 
-  it('pchnięcie przesuwa skrzynię i liczy pchnięcie', () => {
+  it('a push moves the box and counts the push', () => {
     const g = move(newGame(level), 'right');
     expect(g.player).toBe(at(2, 2));
     expect(g.boxes.has(at(3, 2))).toBe(true);
@@ -47,13 +47,13 @@ describe('game', () => {
     expect(g.pushes).toBe(1);
   });
 
-  it('nie da się pchnąć dwóch skrzyń naraz', () => {
+  it('cannot push two boxes at once', () => {
     const one = move(newGame(level), 'right');
     const two = move(one, 'right');
     expect(two).toBe(one);
   });
 
-  it('nie da się wepchnąć skrzyni w ścianę', () => {
+  it('cannot push a box into a wall', () => {
     let g = newGame(level);
     for (const d of ['up', 'right', 'right', 'right'] as const) g = move(g, d);
     expect(g.player).toBe(at(4, 1));
@@ -63,7 +63,7 @@ describe('game', () => {
     expect(blocked).toBe(pushed);
   });
 
-  it('cofnij przywraca poprzedni stan, także po pchnięciu', () => {
+  it('undo restores the previous state, also after a push', () => {
     const start = newGame(level);
     const pushed = move(start, 'right');
     const back = undo(pushed);
@@ -73,12 +73,12 @@ describe('game', () => {
     expect(back.pushes).toBe(0);
   });
 
-  it('cofnij bez historii nic nie robi', () => {
+  it('undo without history does nothing', () => {
     const start = newGame(level);
     expect(undo(start)).toBe(start);
   });
 
-  it('od nowa przywraca stan początkowy', () => {
+  it('reset restores the initial state', () => {
     let g = newGame(level);
     g = move(move(g, 'up'), 'right');
     const r = reset(g);
@@ -87,7 +87,7 @@ describe('game', () => {
     expect(r.history).toHaveLength(0);
   });
 
-  it('rozwiązana, gdy wszystkie skrzynie stoją na celach', () => {
+  it('solved when every box stands on a goal', () => {
     let g = newGame(level);
     for (const d of ['up', 'right', 'right', 'down', 'right'] as const) g = move(g, d);
     expect(boxesOnGoals(g)).toBe(1);

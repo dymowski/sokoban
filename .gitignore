@@ -6,6 +6,6 @@ test-results/
 playwright-report/
 *.log
 
-# Katalogi z kropką to stan lokalny narzędzi i IDE — poza repo; wyjątek: CI GitHuba
+# Dot directories hold local tool and IDE state — kept out of the repo; exception: GitHub CI
 .*/
 !.github/

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('plansza się ładuje bez błędów w konsoli', async ({ page }) => {
+test('the level loads without console errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (msg) => {
     if (msg.type() === 'error') errors.push(msg.text());
@@ -13,7 +13,7 @@ test('plansza się ładuje bez błędów w konsoli', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('każde odświeżenie (F5) pokazuje inną planszę', async ({ page }) => {
+test('every reload (F5) shows a different level', async ({ page }) => {
   await page.goto('/');
   let previous = await page.getByTestId('board').getAttribute('data-level-id');
   for (let i = 0; i < 5; i++) {
@@ -25,7 +25,7 @@ test('każde odświeżenie (F5) pokazuje inną planszę', async ({ page }) => {
   }
 });
 
-test('strzałki poruszają ludzikiem i nie przewijają strony', async ({ page }) => {
+test('arrow keys move the player and do not scroll the page', async ({ page }) => {
   await page.setViewportSize({ width: 400, height: 500 });
   await page.goto('/');
   const player = page.getByTestId('player');
@@ -43,8 +43,8 @@ test('strzałki poruszają ludzikiem i nie przewijają strony', async ({ page })
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
 });
 
-test('gra działa w podkatalogu, jak na GitHub Pages (/sokoban/)', async ({ page }) => {
-  // Na Pages w korzeniu domeny nie ma assetów gry — każde żądanie spoza /sokoban/ musi paść.
+test('the game works in a subdirectory, as on GitHub Pages (/sokoban/)', async ({ page }) => {
+  // On Pages the domain root has no game assets — every request outside /sokoban/ must fail.
   await page.route('**/*', (route) =>
     new URL(route.request().url()).pathname.startsWith('/sokoban/')
       ? route.continue()
@@ -68,7 +68,7 @@ test('gra działa w podkatalogu, jak na GitHub Pages (/sokoban/)', async ({ page
   expect(errors).toEqual([]);
 });
 
-test('klawisz N losuje inną planszę bez przeładowania', async ({ page }) => {
+test('the N key picks another level without a reload', async ({ page }) => {
   await page.goto('/');
   const board = page.getByTestId('board');
   const first = await board.getAttribute('data-level-id');
