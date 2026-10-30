@@ -4,7 +4,8 @@ SHELL := /bin/bash
 export UID := $(shell id -u)
 export GID := $(shell id -g)
 
--include .env
+# wildcard: a missing .env is skipped quietly instead of make trying the .env rule below first
+-include $(wildcard .env)
 APP_PORT ?= 8088
 DEV_PORT ?= 5188
 

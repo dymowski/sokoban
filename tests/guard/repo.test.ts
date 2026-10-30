@@ -122,6 +122,13 @@ describe('repo guards', () => {
     expect(missing, `Missing Makefile targets: ${missing.join(', ')}`).toEqual([]);
   });
 
+  it('Makefile includes .env only when it exists', () => {
+    expect(
+      makefile,
+      'Use "-include $(wildcard .env)": plain "-include .env" makes make run the .env rule first, so every target on a fresh clone prints "No .env file"',
+    ).toMatch(/^-include \$\(wildcard \.env\)$/m);
+  });
+
   it('npm dependencies have exact versions (no ^ or ~)', () => {
     const loose = Object.entries(pkg.devDependencies)
       .filter(([, v]) => !/^\d+\.\d+\.\d+$/.test(v))
