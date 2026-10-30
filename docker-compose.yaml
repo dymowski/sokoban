@@ -1,0 +1,57 @@
+name: sokoban
+
+x-node: &node
+  image: ${NODE_IMAGE:?NODE_IMAGE brak w .env — uruchom make init (kopiuje .env.example do .env)}
+  user: '${UID:-1000}:${GID:-1000}'
+  working_dir: /app
+  environment:
+    HOME: /tmp
+    npm_config_cache: /tmp/.npm
+    npm_config_update_notifier: 'false'
+  volumes:
+    - ./:/app
+
+services:
+  # Narzędzia: npm, vite build, vitest, eslint, svelte-check (make install/build/test/lint…)
+  node:
+    <<: *node
+    profiles: [cli]
+
+  # Serwer deweloperski Vite z HMR (make dev)
+  dev:
+    <<: *node
+    profiles: [dev]
+    command: npx vite --host 0.0.0.0 --port 5173 --strictPort
+    ports:
+      - '${DEV_PORT:?DEV_PORT brak w .env — uruchom make init}:5173'
+
+  # Jedyny endpoint HTTP: serwuje zbudowaną grę z dist/ (make up)
+  nginx:
+    image: ${NGINX_IMAGE:?NGINX_IMAGE brak w .env — uruchom make init}
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./dist:/usr/share/nginx/html:ro
+    ports:
+      - '${APP_PORT:?APP_PORT brak w .env — uruchom make init}:8080'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/health']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Testy e2e (Playwright) przeciw nginx w sieci compose (make test-e2e)
+  e2e:
+    image: ${PLAYWRIGHT_IMAGE:?PLAYWRIGHT_IMAGE brak w .env — uruchom make init}
+    profiles: [test]
+    user: '${UID:-1000}:${GID:-1000}'
+    working_dir: /app
+    environment:
+      HOME: /tmp
+      BASE_URL: http://nginx:8080
+      npm_config_update_notifier: 'false'
+    volumes:
+      - ./:/app
+    depends_on:
+      nginx:
+        condition: service_healthy
+    command: npx playwright test

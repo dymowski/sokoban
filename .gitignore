@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+coverage/
+test-results/
+playwright-report/
+*.log
+
+# Katalogi z kropką to stan lokalny narzędzi i IDE — poza repo; wyjątek: CI GitHuba
+.*/
+!.github/

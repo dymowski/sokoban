@@ -1,0 +1,94 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f4f1ea;
+  --surface: #ffffff;
+  --text: #24211c;
+  --muted: #6b655b;
+  --accent: #2f6fdf;
+  --danger: #c0392b;
+  --floor: #e6dfd0;
+  --wall: #8a6e55;
+  --wall-mortar: #6c533e;
+  --goal: #d64545;
+  --box: #d8a24a;
+  --box-line: #9b6b22;
+  --box-done: #5fae5a;
+  --box-done-line: #367a33;
+  --player: #2f6fdf;
+  --player-edge: #1d4a9c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #17181b;
+    --surface: #23252a;
+    --text: #ece9e2;
+    --muted: #a19c92;
+    --accent: #6b9cf0;
+    --danger: #e0685c;
+    --floor: #34363c;
+    --wall: #5b4a3c;
+    --wall-mortar: #43362b;
+    --goal: #e86a6a;
+    --box: #c99440;
+    --box-line: #8a5f1c;
+    --box-done: #4f9a4b;
+    --box-done-line: #2f682c;
+    --player: #5b8de8;
+    --player-edge: #3466c0;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.4;
+}
+
+button {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+kbd {
+  font-family: ui-monospace, monospace;
+  font-size: 0.75em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  opacity: 0.8;
+}
