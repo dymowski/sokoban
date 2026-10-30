@@ -5,6 +5,9 @@ export type Action =
   | { readonly type: 'undo' }
   | { readonly type: 'reset' }
   | { readonly type: 'next' }
+  | { readonly type: 'previous' }
+  | { readonly type: 'levels' }
+  | { readonly type: 'close' }
   | { readonly type: 'confirm' };
 
 const ARROWS: Readonly<Record<string, Direction>> = {
@@ -20,6 +23,7 @@ export function keyToAction(key: string): Action | null {
   if (dir) return { type: 'move', dir };
   if (key === 'Backspace') return { type: 'undo' };
   if (key === 'Enter') return { type: 'confirm' };
+  if (key === 'Escape') return { type: 'close' };
   switch (key.toLowerCase()) {
     case 'z':
       return { type: 'undo' };
@@ -27,6 +31,10 @@ export function keyToAction(key: string): Action | null {
       return { type: 'reset' };
     case 'n':
       return { type: 'next' };
+    case 'p':
+      return { type: 'previous' };
+    case 'l':
+      return { type: 'levels' };
     default:
       return null;
   }

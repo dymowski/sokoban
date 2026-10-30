@@ -1,19 +1,22 @@
 # Sokoban
 
 A single-page browser game: push every box onto a marked square.
-Every visit (and every F5) picks a different level from the pool. Progress is not saved.
+40 levels go from the easiest to the hardest. The game starts at level 1, but any level can be
+picked at any time. Progress is not saved; only the current level number lives in the address
+(`#7`), so F5 and a shared link keep the level.
 
 Play: **https://dymowski.github.io/sokoban/**
 
 ## Controls
 
-| Key          | Action                     |
-| ------------ | -------------------------- |
-| ↑ ↓ ← →      | move / push a box          |
-| Z, Backspace | undo a move                |
-| R            | restart the level          |
-| N            | another level              |
-| Enter        | next level (after winning) |
+| Key          | Action                                  |
+| ------------ | --------------------------------------- |
+| ↑ ↓ ← →      | move / push a box                       |
+| Z, Backspace | undo a move                             |
+| R            | restart the level                       |
+| N / P        | next / previous level                   |
+| L            | level list (arrows, Enter to play, Esc) |
+| Enter        | next level (after winning)              |
 
 ## Running
 
@@ -50,12 +53,15 @@ application server, any file hosting will do.
 
 ## Structure
 
-- `src/domain/` — pure game logic without Svelte/DOM: XSB level parser, moves and undo, key mapping, random level picking, solver (BFS over pushes, used in tests).
-- `src/levels/levels.ts` — level pool in XSB format (`#` wall, `@` player, `$` box, `.` goal, `*` box on goal, `+` player on goal).
-- `src/ui/` — Svelte components, `src/i18n/` — text dictionary.
+- `src/domain/` — pure game logic without Svelte/DOM: XSB level parser, moves and undo, key mapping, level navigation (address hash, level grid), solver (BFS over pushes, used in tests).
+- `src/levels/levels.ts` — the 40 levels in play order, in XSB format (`#` wall, `@` player, `$` box, `.` goal, `*` box on goal, `+` player on goal).
+- `src/ui/` — Svelte components, `src/i18n/` — text dictionary, `src/url.ts` — the level number in the address.
 - `docker/nginx/` — server configuration, `docker-compose.yaml` — services `node` (tooling), `dev`, `nginx`, `e2e`.
 
 ## Adding a level
 
-Add an object to `LEVELS` in `src/levels/levels.ts` and run `make test-unit` — the test checks
-that the level parses, is not solved at the start and that the solver finds a solution (≥ 4 pushes).
+Levels in `src/levels/levels.ts` are ordered by difficulty. To change one, edit its map and run
+`make test-unit` — the test checks that every level parses, is not solved at the start, and that the
+solver finds a solution (≥ 4 pushes) that works in the game. It also checks the order: the minimum
+number of pushes never drops from one level to the next, and the last level needs the most pushes
+and the largest search of all. The list has exactly 40 levels.

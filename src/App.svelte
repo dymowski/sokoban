@@ -11,65 +11,89 @@
     type GameState,
   } from './domain/game';
   import { keyToAction } from './domain/keys';
-  import { pickLevelId } from './domain/random';
-  import { readLastLevelId, sessionStore, writeLastLevelId, type KeyValueStore } from './storage';
+  import { hashOf, levelFromHash } from './domain/navigation';
+  import { readHash, writeHash } from './url';
   import { t } from './i18n';
   import Board from './ui/Board.svelte';
   import Hud from './ui/Hud.svelte';
+  import LevelPicker from './ui/LevelPicker.svelte';
   import WinOverlay from './ui/WinOverlay.svelte';
 
   interface Props {
     levels?: readonly LevelDef[];
-    rng?: () => number;
-    storage?: KeyValueStore | null;
   }
 
-  let { levels = LEVELS, rng = Math.random, storage = sessionStore() }: Props = $props();
+  let { levels = LEVELS }: Props = $props();
 
-  type Loaded = { ok: true; game: GameState } | { ok: false; id: string; message: string };
+  type Loaded = { ok: true; game: GameState } | { ok: false; message: string };
+  type Current = { readonly index: number; readonly loaded: Loaded };
 
-  function load(lastId: string | null): Loaded {
-    const id = pickLevelId(
-      levels.map((l) => l.id),
-      lastId,
-      rng,
-    );
-    writeLastLevelId(storage, id);
-    const def = levels.find((l) => l.id === id) as LevelDef;
+  function load(index: number): Current {
+    const def = levels[index];
+    if (!def) {
+      throw new Error(`No level ${index + 1} — add levels in src/levels/levels.ts`);
+    }
+    writeHash(hashOf(index));
     try {
-      return { ok: true, game: newGame(parseLevel(def)) };
+      return { index, loaded: { ok: true, game: newGame(parseLevel(def)) } };
     } catch (e) {
-      if (e instanceof LevelError) return { ok: false, id, message: e.message };
+      if (e instanceof LevelError) return { index, loaded: { ok: false, message: e.message } };
       throw e;
     }
   }
 
-  // Initial value only, on purpose: the level is picked once when the page loads.
+  // Initial value only, on purpose: later the level changes through goTo().
   // svelte-ignore state_referenced_locally
-  let current = $state.raw<Loaded>(load(readLastLevelId(storage)));
+  let current = $state.raw<Current>(load(levelFromHash(readHash(), levels.length)));
+  let pickerOpen = $state(false);
 
-  const solved = $derived(current.ok && isSolved(current.game));
+  const isLast = $derived(current.index === levels.length - 1);
+  const solved = $derived(current.loaded.ok && isSolved(current.loaded.game));
 
-  function nextLevel() {
-    current = load(current.ok ? current.game.level.id : current.id);
+  function goTo(index: number) {
+    pickerOpen = false;
+    if (index < 0 || index >= levels.length) return;
+    current = load(index);
   }
 
+  const next = () => goTo(current.index + 1);
+  const previous = () => goTo(current.index - 1);
+  const afterWin = () => goTo(isLast ? 0 : current.index + 1);
+
   function setGame(game: GameState) {
-    if (current.ok && current.game !== game) current = { ok: true, game };
+    if (current.loaded.ok && current.loaded.game !== game) {
+      current = { index: current.index, loaded: { ok: true, game } };
+    }
+  }
+
+  function onHashChange() {
+    const index = levelFromHash(readHash(), levels.length);
+    if (index !== current.index) goTo(index);
+    else writeHash(hashOf(index));
   }
 
   function onKeydown(event: KeyboardEvent) {
+    // The open level list handles its own keys.
+    if (pickerOpen) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const action = keyToAction(event.key);
     if (!action) return;
     // Enter on a focused button is handled by the button itself.
     if (action.type === 'confirm' && event.target instanceof HTMLButtonElement) return;
     event.preventDefault();
-    if (!current.ok) {
-      if (action.type === 'next' || action.type === 'confirm') nextLevel();
-      return;
+    switch (action.type) {
+      case 'next':
+        next();
+        return;
+      case 'previous':
+        previous();
+        return;
+      case 'levels':
+        pickerOpen = true;
+        return;
     }
-    const game = current.game;
+    if (!current.loaded.ok) return;
+    const game = current.loaded.game;
     switch (action.type) {
       case 'move':
         if (!solved) setGame(move(game, action.dir));
@@ -80,17 +104,14 @@
       case 'reset':
         setGame(reset(game));
         break;
-      case 'next':
-        nextLevel();
-        break;
       case 'confirm':
-        if (solved) nextLevel();
+        if (solved) afterWin();
         break;
     }
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} onhashchange={onHashChange} />
 
 <main>
   <header>
@@ -98,9 +119,11 @@
     <p class="tagline">{t('tagline')}</p>
   </header>
 
-  {#if current.ok}
-    {@const game = current.game}
+  {#if current.loaded.ok}
+    {@const game = current.loaded.game}
     <Hud
+      number={current.index + 1}
+      count={levels.length}
       name={game.level.name}
       moves={game.moves}
       pushes={game.pushes}
@@ -109,21 +132,38 @@
       canUndo={game.history.length > 0}
       onUndo={() => setGame(undo(game))}
       onReset={() => setGame(reset(game))}
-      onNext={nextLevel}
+      onPrevious={previous}
+      onNext={next}
+      onLevels={() => (pickerOpen = true)}
     />
     <div class="stage">
       <Board {game} />
       {#if solved}
-        <WinOverlay moves={game.moves} pushes={game.pushes} onNext={nextLevel} />
+        <WinOverlay
+          moves={game.moves}
+          pushes={game.pushes}
+          last={isLast}
+          count={levels.length}
+          onNext={afterWin}
+        />
       {/if}
     </div>
   {:else}
     <section class="error" role="alert">
-      <h2>{t('errorTitle')}</h2>
-      <p class="detail">{current.message}</p>
+      <h2>{t('errorTitle', { number: current.index + 1 })}</h2>
+      <p class="detail">{current.loaded.message}</p>
       <p>{t('errorHint')}</p>
-      <button type="button" onclick={nextLevel}>{t('errorRetry')}</button>
+      <button type="button" onclick={() => (pickerOpen = true)}>{t('errorRetry')}</button>
     </section>
+  {/if}
+
+  {#if pickerOpen}
+    <LevelPicker
+      names={levels.map((l) => l.name)}
+      current={current.index}
+      onPick={goTo}
+      onClose={() => (pickerOpen = false)}
+    />
   {/if}
 
   <ul class="legend">
@@ -131,6 +171,7 @@
     <li>{t('keysUndo')}</li>
     <li>{t('keysReset')}</li>
     <li>{t('keysNext')}</li>
+    <li>{t('keysLevels')}</li>
   </ul>
 </main>
 

@@ -6,6 +6,8 @@ export interface Solution {
   readonly pushes: number;
   /** Full move sequence to replay in the game. */
   readonly moves: readonly Direction[];
+  /** States the search generated before it found the solution — a rough measure of difficulty. */
+  readonly explored: number;
 }
 
 interface Node {
@@ -128,5 +130,5 @@ function rebuild(level: Level, nodes: readonly Node[], goal: number): Solution {
     const pushFrom = cur.player - offset(level, dir);
     moves.push(...walk(level, new Set(prev.boxes), prev.player, pushFrom), dir);
   }
-  return { pushes: chain.length - 1, moves };
+  return { pushes: chain.length - 1, moves, explored: nodes.length };
 }

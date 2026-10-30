@@ -22,6 +22,27 @@ describe('solve', () => {
     expect(isSolved(g)).toBe(true);
   });
 
+  it('reports how many states the search generated, as a measure of difficulty', () => {
+    const easy = solve(
+      lvl(`
+######
+#@$ .#
+######
+`),
+    );
+    const harder = solve(
+      lvl(`
+#######
+#     #
+#@$ $.#
+#   . #
+#######
+`),
+    );
+    expect(easy?.explored).toBeGreaterThan(0);
+    expect(harder?.explored).toBeGreaterThan(easy?.explored ?? Infinity);
+  });
+
   it('returns null for an unsolvable level (box in a corner)', () => {
     expect(
       solve(

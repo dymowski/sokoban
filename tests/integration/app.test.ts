@@ -1,8 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/svelte';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/svelte';
+import { afterEach, describe, expect, it } from 'vitest';
 import App from '../../src/App.svelte';
 import type { LevelDef } from '../../src/domain/level';
-import { LAST_LEVEL_KEY, type KeyValueStore } from '../../src/storage';
 
 const ONE: LevelDef = {
   id: 'one',
@@ -23,24 +22,28 @@ const TWO: LevelDef = {
 #####
 `,
 };
+const THREE: LevelDef = {
+  id: 'three',
+  name: 'Three',
+  map: `
+######
+#@$ .#
+######
+`,
+};
 
-class MemoryStore implements KeyValueStore {
-  data = new Map<string, string>();
-  getItem(key: string) {
-    return this.data.get(key) ?? null;
-  }
-  setItem(key: string, value: string) {
-    this.data.set(key, value);
-  }
-}
+/** Sets the address the game starts with, e.g. "#2"; "" means the bare address. */
+const at = (hash: string) => window.history.replaceState(null, '', `/${hash}`);
 
-const setup = (levels: readonly LevelDef[] = [ONE], storage: KeyValueStore | null = null) =>
-  render(App, { props: { levels, rng: () => 0, storage } });
+const setup = (levels: readonly LevelDef[] = [ONE]) => render(App, { props: { levels } });
 
 const press = (key: string) => fireEvent.keyDown(window, { key });
 const board = () => screen.getByTestId('board');
 const player = () => screen.getByTestId('player');
 const stat = (id: string) => screen.getByTestId(id).textContent?.trim();
+const button = (name: RegExp) => screen.getByRole('button', { name });
+
+afterEach(() => at(''));
 
 describe('App', () => {
   it('shows the level, its name and zeroed counters', () => {
@@ -82,10 +85,68 @@ describe('App', () => {
   });
 
   it('buttons work the same as the shortcuts', async () => {
-    setup();
+    setup([ONE, TWO]);
     await press('ArrowRight');
-    await fireEvent.click(screen.getByRole('button', { name: /Undo/ }));
+    await fireEvent.click(button(/Undo/));
     expect(stat('moves')).toBe('0');
+    await fireEvent.click(button(/Next/));
+    expect(board()).toHaveAttribute('data-level-id', 'two');
+    await fireEvent.click(button(/Previous/));
+    expect(board()).toHaveAttribute('data-level-id', 'one');
+  });
+});
+
+describe('level order', () => {
+  it('starts at level 1 and shows its number out of all levels', () => {
+    setup([ONE, TWO, THREE]);
+    expect(board()).toHaveAttribute('data-level-id', 'one');
+    expect(stat('level-number')).toBe('1/3');
+    expect(window.location.hash).toBe('#1');
+  });
+
+  it('N goes to the next level and P back, both kept in the address', async () => {
+    setup([ONE, TWO, THREE]);
+    await press('n');
+    expect(board()).toHaveAttribute('data-level-id', 'two');
+    expect(stat('level-number')).toBe('2/3');
+    expect(window.location.hash).toBe('#2');
+    await press('p');
+    expect(board()).toHaveAttribute('data-level-id', 'one');
+    expect(window.location.hash).toBe('#1');
+  });
+
+  it('P on the first level and N on the last one do nothing, their buttons are disabled', async () => {
+    setup([ONE, TWO]);
+    expect(button(/Previous/)).toBeDisabled();
+    await press('p');
+    expect(board()).toHaveAttribute('data-level-id', 'one');
+
+    await press('n');
+    expect(button(/Next/)).toBeDisabled();
+    expect(button(/Previous/)).toBeEnabled();
+    await press('n');
+    expect(board()).toHaveAttribute('data-level-id', 'two');
+  });
+
+  it('the level number in the address opens that level (F5, shared link)', () => {
+    at('#3');
+    setup([ONE, TWO, THREE]);
+    expect(board()).toHaveAttribute('data-level-id', 'three');
+    expect(stat('level-number')).toBe('3/3');
+  });
+
+  it.each(['#0', '#4', '#abc'])('an unknown level number "%s" opens level 1', (hash) => {
+    at(hash);
+    setup([ONE, TWO, THREE]);
+    expect(board()).toHaveAttribute('data-level-id', 'one');
+    expect(window.location.hash).toBe('#1');
+  });
+
+  it('changing the number in the address loads that level without a reload', async () => {
+    setup([ONE, TWO, THREE]);
+    at('#2');
+    await fireEvent(window, new HashChangeEvent('hashchange'));
+    expect(board()).toHaveAttribute('data-level-id', 'two');
   });
 
   it('when solved, shows congratulations, blocks arrows, and Enter loads the next level', async () => {
@@ -106,25 +167,84 @@ describe('App', () => {
     expect(stat('moves')).toBe('0');
   });
 
-  it('N picks another level', async () => {
+  it('after the last level, says all levels are solved and Enter goes back to level 1', async () => {
+    at('#2');
     setup([ONE, TWO]);
-    await press('n');
-    expect(board()).toHaveAttribute('data-level-id', 'two');
+    await press('ArrowRight');
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('All 2 levels solved!');
+    expect(within(dialog).getByRole('button', { name: /Back to level 1/ })).toBeInTheDocument();
+
+    await press('Enter');
+    expect(board()).toHaveAttribute('data-level-id', 'one');
+    expect(window.location.hash).toBe('#1');
   });
 
-  it('on start skips the last shown level (F5) and remembers the current one', () => {
-    const store = new MemoryStore();
-    store.setItem(LAST_LEVEL_KEY, 'one');
-    setup([ONE, TWO], store);
-    expect(board()).toHaveAttribute('data-level-id', 'two');
-    expect(store.getItem(LAST_LEVEL_KEY)).toBe('two');
-  });
-
-  it('a broken level shows a clear message and lets the player pick another', async () => {
+  it('a broken level shows a clear message and lets the player choose another', async () => {
     const broken: LevelDef = { id: 'broken', name: 'Broken', map: '#####\n# $.#\n#####' };
     setup([broken, TWO]);
     expect(screen.getByRole('alert')).toHaveTextContent(/Level "broken": no player/);
-    await fireEvent.click(screen.getByRole('button', { name: /Pick another level/ }));
+    await fireEvent.click(button(/Choose a level/));
+    await fireEvent.click(screen.getByRole('button', { name: 'Level 2: Two' }));
     expect(board()).toHaveAttribute('data-level-id', 'two');
+  });
+});
+
+describe('level list', () => {
+  const picker = () => screen.getByRole('dialog', { name: 'Choose a level' });
+
+  it('L opens a grid of all levels with the current one marked', async () => {
+    at('#2');
+    setup([ONE, TWO, THREE]);
+    await press('l');
+    const options = within(picker()).getAllByRole('button', { name: /^Level \d+:/ });
+    expect(options.map((b) => b.textContent?.trim())).toEqual(['1', '2', '3']);
+    expect(options[1]).toHaveAttribute('aria-current', 'true');
+    expect(options[1]).toHaveFocus();
+  });
+
+  it('arrows choose a level and Enter plays it', async () => {
+    setup([ONE, TWO, THREE]);
+    await press('l');
+    await press('ArrowRight');
+    await press('ArrowRight');
+    expect(screen.getByRole('button', { name: 'Level 3: Three' })).toHaveFocus();
+    await press('Enter');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(board()).toHaveAttribute('data-level-id', 'three');
+    expect(window.location.hash).toBe('#3');
+  });
+
+  it('clicking a level plays it', async () => {
+    setup([ONE, TWO, THREE]);
+    await fireEvent.click(button(/Levels/));
+    await fireEvent.click(screen.getByRole('button', { name: 'Level 2: Two' }));
+    expect(board()).toHaveAttribute('data-level-id', 'two');
+  });
+
+  it('while the list is open, game keys do nothing', async () => {
+    setup([ONE, TWO, THREE]);
+    await press('l');
+    for (const key of ['ArrowRight', 'ArrowDown', 'n', 'p', 'r', 'z']) await press(key);
+    expect(picker()).toBeInTheDocument();
+    expect(board()).toHaveAttribute('data-level-id', 'one');
+    expect(player()).toHaveAttribute('data-pos', '1,2');
+    expect(stat('moves')).toBe('0');
+  });
+
+  it.each(['Escape', 'l'])('%s closes the list and keeps the level', async (key) => {
+    setup([ONE, TWO, THREE]);
+    await press('l');
+    await press('ArrowRight');
+    await press(key);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(board()).toHaveAttribute('data-level-id', 'one');
+  });
+
+  it('the Close button closes the list', async () => {
+    setup([ONE, TWO]);
+    await press('l');
+    await fireEvent.click(within(picker()).getByRole('button', { name: /Close/ }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

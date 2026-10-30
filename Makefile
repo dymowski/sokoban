@@ -45,7 +45,7 @@ up: build ## Build and run the game behind nginx
 	$(COMPOSE) up -d --wait nginx
 	@echo ""
 	@echo "✅ Game is running: http://localhost:$(APP_PORT)"
-	@echo "   Controls: arrows, Z = undo, R = restart, N = another level"
+	@echo "   Controls: arrows, Z = undo, R = restart, N/P = next/previous level, L = level list"
 	@echo "   Next: make logs  |  make down  |  make dev (HMR at http://localhost:$(DEV_PORT))"
 
 down: ## Stop all containers

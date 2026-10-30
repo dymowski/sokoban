@@ -1,14 +1,25 @@
 <script lang="ts">
   import { t } from '../i18n';
 
-  let { moves, pushes, onNext }: { moves: number; pushes: number; onNext: () => void } = $props();
+  interface Props {
+    moves: number;
+    pushes: number;
+    /** The last level: there is no next one, the button goes back to level 1. */
+    last: boolean;
+    count: number;
+    onNext: () => void;
+  }
+
+  let { moves, pushes, last, count, onNext }: Props = $props();
 </script>
 
 <div class="overlay" role="dialog" aria-modal="true" aria-labelledby="win-title">
   <div class="card">
-    <h2 id="win-title">{t('winTitle')}</h2>
+    <h2 id="win-title">{last ? t('winAllTitle', { total: count }) : t('winTitle')}</h2>
     <p>{t('winText', { moves, pushes })}</p>
-    <button type="button" class="primary" onclick={onNext}>{t('winNext')} <kbd>Enter</kbd></button>
+    <button type="button" class="primary" onclick={onNext}>
+      {last ? t('winRestart') : t('winNext')} <kbd>Enter</kbd>
+    </button>
   </div>
 </div>
 

@@ -13,16 +13,25 @@ test('the level loads without console errors', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('every reload (F5) shows a different level', async ({ page }) => {
+test('starts at level 1 of 40, and the level number in the address survives F5', async ({
+  page,
+}) => {
   await page.goto('/');
-  let previous = await page.getByTestId('board').getAttribute('data-level-id');
-  for (let i = 0; i < 5; i++) {
-    await page.reload();
-    const current = await page.getByTestId('board').getAttribute('data-level-id');
-    expect(current).not.toBeNull();
-    expect(current).not.toBe(previous);
-    previous = current;
-  }
+  const number = page.getByTestId('level-number');
+  await expect(number).toHaveText('1/40');
+  await page.keyboard.press('n');
+  await expect(number).toHaveText('2/40');
+  await expect(page).toHaveURL(/#2$/);
+  await page.reload();
+  await expect(number).toHaveText('2/40');
+  await page.keyboard.press('p');
+  await expect(number).toHaveText('1/40');
+});
+
+test('a link with a level number opens that level', async ({ page }) => {
+  await page.goto('/#40');
+  await expect(page.getByTestId('level-number')).toHaveText('40/40');
+  await expect(page.getByRole('button', { name: /Next/ })).toBeDisabled();
 });
 
 test('arrow keys move the player and do not scroll the page', async ({ page }) => {
@@ -68,10 +77,16 @@ test('the game works in a subdirectory, as on GitHub Pages (/sokoban/)', async (
   expect(errors).toEqual([]);
 });
 
-test('the N key picks another level without a reload', async ({ page }) => {
+test('the level list: L, arrows and Enter jump to a level', async ({ page }) => {
   await page.goto('/');
-  const board = page.getByTestId('board');
-  const first = await board.getAttribute('data-level-id');
-  await page.keyboard.press('n');
-  await expect(board).not.toHaveAttribute('data-level-id', first ?? '');
+  await page.keyboard.press('l');
+  const picker = page.getByRole('dialog', { name: 'Choose a level' });
+  await expect(picker).toBeVisible();
+  await expect(picker.getByRole('button', { name: /^Level \d+:/ })).toHaveCount(40);
+  // From 1: two to the right, one row (8 levels) down → 11.
+  for (const key of ['ArrowRight', 'ArrowRight', 'ArrowDown']) await page.keyboard.press(key);
+  await page.keyboard.press('Enter');
+  await expect(picker).toBeHidden();
+  await expect(page.getByTestId('level-number')).toHaveText('11/40');
+  await expect(page).toHaveURL(/#11$/);
 });

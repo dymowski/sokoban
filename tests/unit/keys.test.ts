@@ -19,6 +19,11 @@ describe('keyToAction', () => {
     ['R', 'reset'],
     ['n', 'next'],
     ['N', 'next'],
+    ['p', 'previous'],
+    ['P', 'previous'],
+    ['l', 'levels'],
+    ['L', 'levels'],
+    ['Escape', 'close'],
     ['Enter', 'confirm'],
   ] as const)('%s → %s', (key, type) => {
     expect(keyToAction(key)).toEqual({ type });
